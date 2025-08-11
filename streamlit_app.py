@@ -11,10 +11,10 @@ st.markdown("Using Prophet to forecast the next 32 months based on Snowflake dat
 
 # Snowflake connection using Streamlit secrets
 conn = snowflake.connector.connect(
-    user=os.environ["datateam"],
-    password=os.environ["Miracle@#$5648"],
-    account=os.environ["QA55890"],
-    warehouse=os.environ["COMPUTE_WH"],
+    user=st.secrets["datateam"],
+    password=st.secrets["Miracle@#$5648"],
+    account=st.secrets["QA55890"],
+    warehouse=st.secrets["COMPUTE_WH"],
     database="FORECAST_DB",
     schema="FORECAST_SCHEMA"
 )
@@ -39,3 +39,4 @@ forecast = model.predict(future)
 st.subheader("Forecast Chart")
 fig = model.plot(forecast)
 st.pyplot(fig)
+
