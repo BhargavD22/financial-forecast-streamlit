@@ -56,11 +56,32 @@ if df.empty:
     st.error("❌ No valid data after cleaning. Check your Snowflake table.")
     st.stop()
 
-# Show raw data
+## Show raw data
 # st.subheader("Raw Data Preview")
 # st.write(df.tail())
+# -------------------
+# User selects forecast horizon
+# -------------------
+forecast_days = st.slider("Select Forecast Horizon (Days)", min_value=30, max_value=365, value=90, step=1)
 
 # -------------------
+# Prophet Forecast
+# -------------------
+model = Prophet()
+model.fit(df)
+
+future = model.make_future_dataframe(periods=forecast_days, freq='D')
+forecast = model.predict(future)
+
+# -------------------
+# Plot
+# -------------------
+st.subheader(f"Forecast for Next {forecast_days} Days")
+fig = model.plot(forecast)
+st.pyplot(fig)
+
+
+## -------------------
 # Forecasting
 # -------------------
 try:
@@ -77,4 +98,5 @@ try:
 
 except Exception as e:
     st.error(f"❌ Forecasting failed: {e}")
+
 
