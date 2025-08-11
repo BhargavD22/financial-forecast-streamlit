@@ -99,4 +99,4 @@ try:
 except Exception as e:
     st.error(f"❌ Forecasting failed: {e}")
 
-this code above gives me the input as in snippet forecast 1.png
+
