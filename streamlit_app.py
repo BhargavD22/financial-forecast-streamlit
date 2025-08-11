@@ -36,12 +36,9 @@ conn.close()
 # Show raw data
 st.subheader("Raw Data")
 st.write(df.tail())
-
-## adjust these names to match your Snowflake table
-df = df.rename(columns={
-    "ds": "ds",    # replace with your actual date column name
-    "y": "y"     # replace with your actual numeric column name
-})
+# Show column names and  data
+st.subheader("Raw Data")
+st.write(df.head())
 
 # Make sure types are correct
 df['ds'] = pd.to_datetime(df['ds'])
@@ -59,6 +56,7 @@ forecast = model.predict(future)
 st.subheader("Forecast Chart")
 fig = model.plot(forecast)
 st.pyplot(fig)
+
 
 
 
