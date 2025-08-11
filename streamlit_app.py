@@ -57,8 +57,8 @@ if df.empty:
     st.stop()
 
 # Show raw data
-st.subheader("Raw Data Preview")
-st.write(df.tail())
+# st.subheader("Raw Data Preview")
+# st.write(df.tail())
 
 # -------------------
 # Forecasting
@@ -77,3 +77,4 @@ try:
 
 except Exception as e:
     st.error(f"❌ Forecasting failed: {e}")
+
