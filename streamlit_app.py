@@ -28,39 +28,27 @@ except Exception as e:
     st.error(f"❌ Failed to connect to Snowflake: {e}")
     st.stop()
 
-# -------------------
-# Fetch Data
-# -------------------
+# Fetch data from Snowflake
 query = "SELECT ds, y FROM forecast_data ORDER BY ds"
-try:
-    df = pd.read_sql(query, conn)
-    conn.close()
-    st.subheader("Raw Data Preview")
-    st.write(df.tail())
-except Exception as e:
-    st.error(f"❌ Failed to fetch data: {e}")
-    st.stop()
+df = pd.read_sql(query, conn)
+conn.close()
 
-# -------------------
-# Run Prophet Forecast
-# -------------------
-try:
-    model = Prophet()
-    model.fit(df)
+# Show raw data
+st.subheader("Raw Data")
+st.write(df.tail())
 
-    future = model.make_future_dataframe(periods=32, freq='M')
-    forecast = model.predict(future)
+# Forecast using Prophet
+model = Prophet()
+model.fit(df)
 
-    st.subheader("Forecast Chart")
-    fig1 = model.plot(forecast)
-    st.pyplot(fig1)
+future = model.make_future_dataframe(periods=32, freq='M')
+forecast = model.predict(future)
 
-    st.subheader("Forecast Components")
-    fig2 = model.plot_components(forecast)
-    st.pyplot(fig2)
+# Plot
+st.subheader("Forecast Chart")
+fig = model.plot(forecast)
+st.pyplot(fig)
 
-except Exception as e:
-    st.error(f"❌ Forecasting failed: {e}")
 
 
 
