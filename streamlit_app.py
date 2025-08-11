@@ -28,42 +28,52 @@ except Exception as e:
     st.error(f"❌ Failed to connect to Snowflake: {e}")
     st.stop()
 
-# Fetch data from Snowflake
+# -------------------
+# Fetch Data from Snowflake
+# -------------------
 query = "SELECT ds, y FROM forecast_data ORDER BY ds"
 df = pd.read_sql(query, conn)
 conn.close()
 
-# Show raw data
-st.subheader("Raw Data")
-st.write(df.tail())
-# Show column names and  data
-st.subheader("Raw Data")
-st.write(df.head())
+# -------------------
+# Ensure Correct Columns
+# -------------------
+df.columns = df.columns.str.lower().str.strip()  # Normalize column names
+if not set(['ds', 'y']).issubset(df.columns):
+    st.error("❌ Dataframe must have columns 'ds' and 'y'. Found: " + str(df.columns.tolist()))
+    st.stop()
 
-# Make sure types are correct
-df['ds'] = pd.to_datetime(df['ds'])
+# -------------------
+# Type Conversion
+# -------------------
+df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 df['y'] = pd.to_numeric(df['y'], errors='coerce')
 
+# Drop rows with missing values
+df = df.dropna(subset=['ds', 'y'])
 
-# Forecast using Prophet
-model = Prophet()
-model.fit(df)
+if df.empty:
+    st.error("❌ No valid data after cleaning. Check your Snowflake table.")
+    st.stop()
 
-future = model.make_future_dataframe(periods=32, freq='M')
-forecast = model.predict(future)
+# Show raw data
+st.subheader("Raw Data Preview")
+st.write(df.tail())
 
-# Plot
-st.subheader("Forecast Chart")
-fig = model.plot(forecast)
-st.pyplot(fig)
+# -------------------
+# Forecasting
+# -------------------
+try:
+    model = Prophet()
+    model.fit(df)
 
+    future = model.make_future_dataframe(periods=32, freq='M')
+    forecast = model.predict(future)
 
+    # Plot
+    st.subheader("Forecast Chart")
+    fig = model.plot(forecast)
+    st.pyplot(fig)
 
-
-
-
-
-
-
-
-
+except Exception as e:
+    st.error(f"❌ Forecasting failed: {e}")
