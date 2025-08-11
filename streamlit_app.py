@@ -8,6 +8,12 @@ import os
 st.set_page_config(page_title="📈 Forecast for Next 32 Months", layout="centered")
 st.title("📈 Financial Forecasting App")
 st.markdown("Using Prophet to forecast the next 32 months based on Snowflake data")
+# 🔍 Debug: Check what secrets are available
+st.write("Secrets keys available:", list(st.secrets.keys()))
+if "snowflake" in st.secrets:
+    st.write("Snowflake keys:", list(st.secrets["snowflake"].keys()))
+else:
+    st.write("No 'snowflake' section found in secrets!")
 
 # Snowflake connection using Streamlit secrets
 conn = snowflake.connector.connect(
@@ -40,6 +46,7 @@ forecast = model.predict(future)
 st.subheader("Forecast Chart")
 fig = model.plot(forecast)
 st.pyplot(fig)
+
 
 
 
