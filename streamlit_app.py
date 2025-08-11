@@ -1,65 +1,68 @@
 import streamlit as st
 import pandas as pd
 from prophet import Prophet
-from prophet.plot import plot_plotly
-import plotly.graph_objs as go
+import matplotlib.pyplot as plt
 import snowflake.connector
-from io import BytesIO
 
 # -------------------
 # Streamlit Page Config
 # -------------------
-st.set_page_config(page_title="📈 Financial Forecasting App", layout="wide")
+st.set_page_config(page_title="📈 Forecast for Next 32 Months", layout="centered")
 st.title("📈 Financial Forecasting App")
-st.markdown("Forecast your data from Snowflake with Prophet")
+st.markdown("Using Prophet to forecast the next 32 months based on Snowflake data")
 
 # -------------------
-# Connect to Snowflake
+# Snowflake Connection
 # -------------------
-@st.cache_data
-def load_data():
-    try:
-        conn = snowflake.connector.connect(
-            user=st.secrets["snowflake"]["user"],
-            password=st.secrets["snowflake"]["password"],
-            account=st.secrets["snowflake"]["account"],
-            warehouse=st.secrets["snowflake"]["warehouse"],
-            database=st.secrets["snowflake"]["database"],
-            schema=st.secrets["snowflake"]["schema"],
-        )
-        query = "SELECT ds, y FROM forecast_data ORDER BY ds"
-        df = pd.read_sql(query, conn)
-        conn.close()
-        return df
-    except Exception as e:
-        st.error(f"❌ Failed to connect to Snowflake: {e}")
-        return pd.DataFrame()
-
-df = load_data()
-
-if df.empty:
+try:
+    conn = snowflake.connector.connect(
+        user=st.secrets["snowflake"]["user"],
+        password=st.secrets["snowflake"]["password"],
+        account=st.secrets["snowflake"]["account"],
+        warehouse=st.secrets["snowflake"]["warehouse"],
+        database=st.secrets["snowflake"]["database"],
+        schema=st.secrets["snowflake"]["schema"],
+    )
+    st.success("✅ Connected to Snowflake successfully!")
+except Exception as e:
+    st.error(f"❌ Failed to connect to Snowflake: {e}")
     st.stop()
 
-# Ensure correct formats
-df['ds'] = pd.to_datetime(df['ds'])
+# -------------------
+# Fetch Data from Snowflake
+# -------------------
+query = "SELECT ds, y FROM forecast_data ORDER BY ds"
+df = pd.read_sql(query, conn)
+conn.close()
+
+# -------------------
+# Ensure Correct Columns
+# -------------------
+df.columns = df.columns.str.lower().str.strip()  # Normalize column names
+if not set(['ds', 'y']).issubset(df.columns):
+    st.error("❌ Dataframe must have columns 'ds' and 'y'. Found: " + str(df.columns.tolist()))
+    st.stop()
+
+# -------------------
+# Type Conversion
+# -------------------
+df['ds'] = pd.to_datetime(df['ds'], errors='coerce')
 df['y'] = pd.to_numeric(df['y'], errors='coerce')
 
-# -------------------
-# User chooses forecast horizon
-# -------------------
-forecast_days = st.slider(
-    "Select Forecast Horizon (Days)", 
-    min_value=30, max_value=365, value=90, step=1
-)
+# Drop rows with missing values
+df = df.dropna(subset=['ds', 'y'])
 
+if df.empty:
+    st.error("❌ No valid data after cleaning. Check your Snowflake table.")
+    st.stop()
+
+## Show raw data
+# st.subheader("Raw Data Preview")
+# st.write(df.tail())
 # -------------------
-# Historical Trend Chart
+# User selects forecast horizon
 # -------------------
-st.subheader("📊 Historical Data Trend")
-fig_hist = go.Figure()
-fig_hist.add_trace(go.Scatter(x=df['ds'], y=df['y'], mode='lines+markers', name='Historical Data'))
-fig_hist.update_layout(title="Historical Trend", xaxis_title="Date", yaxis_title="Value")
-st.plotly_chart(fig_hist, use_container_width=True)
+forecast_days = st.slider("Select Forecast Horizon (Days)", min_value=30, max_value=365, value=90, step=1)
 
 # -------------------
 # Prophet Forecast
@@ -70,24 +73,30 @@ model.fit(df)
 future = model.make_future_dataframe(periods=forecast_days, freq='D')
 forecast = model.predict(future)
 
-# Interactive Prophet forecast chart
-st.subheader(f"🔮 Prophet Forecast (Next {forecast_days} Days)")
-fig_forecast = plot_plotly(model, forecast)
-st.plotly_chart(fig_forecast, use_container_width=True)
+# -------------------
+# Plot
+# -------------------
+st.subheader(f"Forecast for Next {forecast_days} Days")
+fig = model.plot(forecast)
+st.pyplot(fig)
 
-# -------------------
-# Forecast Table
-# -------------------
-st.subheader("📄 Forecast Data Table")
-st.dataframe(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']])
 
+## -------------------
+# Forecasting
 # -------------------
-# Download CSV Button
-# -------------------
-csv = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="⬇️ Download Forecast as CSV",
-    data=csv,
-    file_name="forecast_results.csv",
-    mime="text/csv"
-)
+try:
+    model = Prophet()
+    model.fit(df)
+
+    future = model.make_future_dataframe(periods=32, freq='M')
+    forecast = model.predict(future)
+
+    # Plot
+    st.subheader("Forecast Chart")
+    fig = model.plot(forecast)
+    st.pyplot(fig)
+
+except Exception as e:
+    st.error(f"❌ Forecasting failed: {e}")
+
+this code above gives me the input as in snippet forecast 1.png
