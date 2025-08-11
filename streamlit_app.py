@@ -10,7 +10,7 @@ st.title("📈 Financial Forecasting App")
 st.markdown("Using Prophet to forecast the next 32 months based on Snowflake data")
 
 # Snowflake connection using Streamlit secrets
-sf_conn = snowflake.connector.connect(
+conn = snowflake.connector.connect(
     user=st.secrets["snowflake"]["user"],
     password=st.secrets["snowflake"]["password"],
     account=st.secrets["snowflake"]["account"],
@@ -40,6 +40,7 @@ forecast = model.predict(future)
 st.subheader("Forecast Chart")
 fig = model.plot(forecast)
 st.pyplot(fig)
+
 
 
 
